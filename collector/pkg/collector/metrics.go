@@ -181,16 +181,16 @@ func (mc *MetricsCollector) CollectMdadm(deviceWWN string, deviceName string, de
 	var fullDeviceName string
 	if strings.HasPrefix(deviceName, "/dev/md/") {
 		fullDeviceName = deviceName
-		mc.logger.Debugf("Using full device path directly: %s", fullDeviceName)
+		mc.logger.Infof("Using full device path directly: %s", fullDeviceName)
 	} else {
 		// Check if deviceName is just a number (like "0") and construct proper path
 		if _, err := strconv.Atoi(deviceName); err == nil {
 			fullDeviceName = fmt.Sprintf("/dev/md/%s", deviceName)
-			mc.logger.Debugf("Constructed mdadm device path: %s from numeric device name: %s", fullDeviceName, deviceName)
+			mc.logger.Infof("Constructed mdadm device path: %s from numeric device name: %s", fullDeviceName, deviceName)
 		} else {
 			// If it's not a number, use it as-is but with proper prefix
 			fullDeviceName = fmt.Sprintf("/dev/%s", deviceName)
-			mc.logger.Debugf("Constructed device path: %s from device name: %s", fullDeviceName, deviceName)
+			mc.logger.Infof("Constructed device path: %s from device name: %s", fullDeviceName, deviceName)
 		}
 	}
 	
