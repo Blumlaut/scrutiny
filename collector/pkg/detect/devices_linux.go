@@ -40,7 +40,6 @@ func (d *Detect) DetectMdadmArrays() ([]models.Device, error) {
 			// Parse ARRAY line
 			device := models.Device{
 				DeviceType: "mdadm",
-				IsRaidArray: true,
 			}
 			
 			// Extract device name and key-value pairs from the same line
@@ -112,7 +111,7 @@ func (d *Detect) Start() ([]models.Device, error) {
 	// Inflate device info for detected devices
 	// Skip SmartCtlInfo for mdadm devices as they don't have SMART data
 	for ndx, device := range detectedDevices {
-		if device.DeviceType == "mdadm" || device.IsRaidArray {
+		if device.DeviceType == "mdadm" {
 			// For mdadm arrays, we already have the information from DetectMdadmArrays
 			// Skip SmartCtlInfo and just populate udev info
 			populateUdevInfo(&detectedDevices[ndx]) //ignore errors.

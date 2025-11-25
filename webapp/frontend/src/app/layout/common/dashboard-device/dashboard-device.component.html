@@ -1,4 +1,4 @@
-<div *ngIf="deviceSummary.device.device_type === 'mdadm' || deviceSummary.device.is_raid_array === true else regularDeviceCard">
+<div *ngIf="deviceSummary.device.device_type === 'mdadm' else regularDeviceCard">
   <!-- RAID Array Card UI -->
   <div class="flex flex-col flex-auto w-full p-6 pr-3 pb-3 bg-card rounded border-l-4 shadow-md overflow-hidden">
     <div class="absolute bottom-0 right-0 w-24 h-24 -m-6">

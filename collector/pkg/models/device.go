@@ -22,7 +22,6 @@ type Device struct {
 	DeviceType     string `json:"device_type"`     //device type is used for querying with -d/t flag, should only be used by collector.
 	
 	// New fields for RAID arrays
-	IsRaidArray    bool   `json:"is_raid_array,omitempty"`
 	RaidLevel      string `json:"raid_level,omitempty"`
 	ArrayStatus    string `json:"array_status,omitempty"`
 	RaidDevices    int    `json:"raid_devices,omitempty"`

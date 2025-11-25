@@ -26,7 +26,6 @@ export interface DeviceModel {
     device_status: number;
     
     // RAID-specific fields
-    is_raid_array?: boolean;
     raid_level?: string;
     array_status?: string;
     raid_devices?: number;

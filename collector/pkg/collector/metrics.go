@@ -93,7 +93,7 @@ func (mc *MetricsCollector) Run() error {
 			//go mc.Collect(&wg, device.WWN, device.DeviceName, device.DeviceType)
 			
 			// Check if this is an mdadm device
-			if strings.HasPrefix(device.DeviceType, "mdadm") || device.IsRaidArray {
+			if strings.HasPrefix(device.DeviceType, "mdadm") {
 				// Handle mdadm device differently
 				mc.CollectMdadm(device.WWN, device.DeviceName, device.DeviceType)
 			} else {
@@ -195,7 +195,6 @@ func (mc *MetricsCollector) CollectMdadm(deviceWWN string, deviceName string, de
 		WWN:          deviceWWN,
 		DeviceName:   deviceName,
 		DeviceType:   deviceType,
-		IsRaidArray:  true,
 	}
 	
 	// Parse basic RAID information from mdadm output using a more robust approach
@@ -305,6 +304,9 @@ func (mc *MetricsCollector) CollectMdadm(deviceWWN string, deviceName string, de
 			}
 		}
 	}
+	
+	// Add the device type to mdadm
+	device.DeviceType = "mdadm"
 	
 	// Create a JSON payload with the parsed RAID data
 	// This ensures the data is properly structured for the frontend
