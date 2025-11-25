@@ -243,6 +243,7 @@ func (mc *MetricsCollector) CollectMdadm(deviceWWN string, deviceName string, de
 	// Create a JSON payload with the parsed RAID data
 	// This ensures the data is properly structured for the frontend
 	payload, err := json.Marshal(device)
+	mc.logger.Infof("data: %s", payload)
 	if err != nil {
 		mc.logger.Errorf("Error marshaling device data for %s: %v", deviceName, err)
 		// Fallback to raw mdadm output if marshaling fails
