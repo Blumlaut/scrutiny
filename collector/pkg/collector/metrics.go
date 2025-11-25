@@ -162,7 +162,7 @@ func (mc *MetricsCollector) Collect(deviceWWN string, deviceName string, deviceT
 	}
 }
 
-// CollectMdadm collects metrics for mdadm RAID arrays
+	// CollectMdadm collects metrics for mdadm RAID arrays
 func (mc *MetricsCollector) CollectMdadm(deviceWWN string, deviceName string, deviceType string) {
 	// Only process if mdadm command is available
 	_, err := exec.LookPath("mdadm")
@@ -176,7 +176,15 @@ func (mc *MetricsCollector) CollectMdadm(deviceWWN string, deviceName string, de
 	mc.logger.Infof("Collecting mdadm details for RAID array %s\n", deviceName)
 	
 	// Run mdadm --detail to get comprehensive array status
-	fullDeviceName := fmt.Sprintf("%s%s", detect.DevicePrefix(), deviceName)
+	// For mdadm arrays, we need to properly construct the device path
+	// The deviceName from detection might be just "0" but we need "/dev/md/0"
+	var fullDeviceName string
+	if strings.HasPrefix(deviceName, "/dev/md/") {
+		fullDeviceName = deviceName
+	} else {
+		fullDeviceName = fmt.Sprintf("/dev/md/%s", deviceName)
+	}
+	
 	// Use --detail which provides comprehensive RAID status information
 	// This gives detailed output including array configuration, status, devices, etc.
 	args := []string{"--detail", fullDeviceName}
