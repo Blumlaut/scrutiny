@@ -198,91 +198,104 @@ func (mc *MetricsCollector) CollectMdadm(deviceWWN string, deviceName string, de
 		IsRaidArray:  true,
 	}
 	
-	// Parse basic RAID information from mdadm output using a map for cleaner code
-	// Define the mapping of mdadm output keys to device fields
-	fieldMappings := map[string]*string{
-		"Raid Level":   &device.RaidLevel,
-		"Array Size":   &device.ArraySize,
-		"Layout":       &device.Layout,
-		"Chunk Size":   &device.ChunkSize,
-		"State":        &device.ArrayStatus,
-	}
-	
-	// Define the mapping of mdadm output keys to integer fields
-	intFieldMappings := map[string]*int{
-		"Raid Devices":   &device.RaidDevices,
-		"Active Devices": &device.ActiveDevices,
-		"Failed Devices": &device.FailedDevices,
-		"Working Devices": &device.WorkingDevices,
-	}
-	
+	// Parse basic RAID information from mdadm output using a more robust approach
 	lines := strings.Split(strings.TrimSpace(result), "\n")
+	
+	// Process each line to extract RAID information
 	for _, line := range lines {
 		line = strings.TrimSpace(line)
-		// Handle various possible formats for mdadm output
-		for key, fieldPtr := range fieldMappings {
-			// Check for exact key match or variations - handle different formats
-			if strings.HasPrefix(line, key+":") {
-				if parts := strings.SplitN(line, ":", 2); len(parts) > 1 {
-					// Clean up the value by removing prefixes like "Level : ", "Size : ", ": "
-					value := strings.TrimSpace(parts[1])
-					// Remove common prefixes that might appear in mdadm output
-					if strings.HasPrefix(value, ": ") {
-						value = strings.TrimSpace(strings.TrimPrefix(value, ": "))
-					} else if strings.HasPrefix(value, ":") {
-						value = strings.TrimSpace(strings.TrimPrefix(value, ":"))
-					}
-					*fieldPtr = value
-				}
-				break // Found a match, move to next line
-			} else if strings.HasPrefix(line, key+" ") {
-				// Handle cases where key is followed by space instead of colon
-				if parts := strings.SplitN(line, " ", 2); len(parts) > 1 {
-					// Clean up the value
-					value := strings.TrimSpace(parts[1])
-					// Remove common prefixes that might appear in mdadm output
-					if strings.HasPrefix(value, ": ") {
-						value = strings.TrimSpace(strings.TrimPrefix(value, ": "))
-					} else if strings.HasPrefix(value, ":") {
-						value = strings.TrimSpace(strings.TrimPrefix(value, ":"))
-					}
-					*fieldPtr = value
-				}
-				break // Found a match, move to next line
-			}
+		
+		// Skip empty lines and header lines
+		if line == "" || strings.HasPrefix(line, "/dev/md") || strings.HasPrefix(line, "Version") {
+			continue
 		}
 		
-		for key, fieldPtr := range intFieldMappings {
-			// Check for exact key match or variations - handle different formats
-			if strings.HasPrefix(line, key+":") {
-				if parts := strings.SplitN(line, ":", 2); len(parts) > 1 {
-					// Clean up the value by removing prefixes that might appear
-					valueStr := strings.TrimSpace(parts[1])
-					if strings.HasPrefix(valueStr, ": ") {
-						valueStr = strings.TrimSpace(strings.TrimPrefix(valueStr, ": "))
-					} else if strings.HasPrefix(valueStr, ":") {
-						valueStr = strings.TrimSpace(strings.TrimPrefix(valueStr, ":"))
+		// Handle key-value pairs with different formats
+		if strings.Contains(line, ":") {
+			parts := strings.SplitN(line, ":", 2)
+			if len(parts) == 2 {
+				key := strings.TrimSpace(parts[0])
+				value := strings.TrimSpace(parts[1])
+				
+				// Clean up the value by removing any leading/trailing whitespace and colon
+				if strings.HasPrefix(value, ": ") {
+					value = strings.TrimSpace(strings.TrimPrefix(value, ": "))
+				} else if strings.HasPrefix(value, ":") {
+					value = strings.TrimSpace(strings.TrimPrefix(value, ":"))
+				}
+				
+				switch key {
+				case "Raid Level":
+					device.RaidLevel = value
+				case "Array Size":
+					device.ArraySize = value
+				case "Layout":
+					device.Layout = value
+				case "Chunk Size":
+					device.ChunkSize = value
+				case "State":
+					device.ArrayStatus = value
+				case "Raid Devices":
+					if valueInt, err := strconv.Atoi(value); err == nil {
+						device.RaidDevices = valueInt
 					}
-					if value, err := strconv.Atoi(valueStr); err == nil {
-						*fieldPtr = value
+				case "Active Devices":
+					if valueInt, err := strconv.Atoi(value); err == nil {
+						device.ActiveDevices = valueInt
+					}
+				case "Failed Devices":
+					if valueInt, err := strconv.Atoi(value); err == nil {
+						device.FailedDevices = valueInt
+					}
+				case "Working Devices":
+					if valueInt, err := strconv.Atoi(value); err == nil {
+						device.WorkingDevices = valueInt
 					}
 				}
-				break // Found a match, move to next line
-			} else if strings.HasPrefix(line, key+" ") {
-				// Handle cases where key is followed by space instead of colon
-				if parts := strings.SplitN(line, " ", 2); len(parts) > 1 {
-					// Clean up the value by removing prefixes that might appear
-					valueStr := strings.TrimSpace(parts[1])
-					if strings.HasPrefix(valueStr, ": ") {
-						valueStr = strings.TrimSpace(strings.TrimPrefix(valueStr, ": "))
-					} else if strings.HasPrefix(valueStr, ":") {
-						valueStr = strings.TrimSpace(strings.TrimPrefix(valueStr, ":"))
+			}
+		} else if strings.Contains(line, " ") && !strings.HasPrefix(line, "Number") {
+			// Handle lines with space separators (like "Layout : left-symmetric")
+			parts := strings.Fields(line)
+			if len(parts) >= 2 {
+				// The key is everything before the first space
+				key := strings.TrimSuffix(parts[0], ":")
+				value := strings.Join(parts[1:], " ")
+				
+				// Clean up the value
+				if strings.HasPrefix(value, ": ") {
+					value = strings.TrimSpace(strings.TrimPrefix(value, ": "))
+				} else if strings.HasPrefix(value, ":") {
+					value = strings.TrimSpace(strings.TrimPrefix(value, ":"))
+				}
+				
+				switch key {
+				case "Raid Level":
+					device.RaidLevel = value
+				case "Array Size":
+					device.ArraySize = value
+				case "Layout":
+					device.Layout = value
+				case "Chunk Size":
+					device.ChunkSize = value
+				case "State":
+					device.ArrayStatus = value
+				case "Raid Devices":
+					if valueInt, err := strconv.Atoi(value); err == nil {
+						device.RaidDevices = valueInt
 					}
-					if value, err := strconv.Atoi(valueStr); err == nil {
-						*fieldPtr = value
+				case "Active Devices":
+					if valueInt, err := strconv.Atoi(value); err == nil {
+						device.ActiveDevices = valueInt
+					}
+				case "Failed Devices":
+					if valueInt, err := strconv.Atoi(value); err == nil {
+						device.FailedDevices = valueInt
+					}
+				case "Working Devices":
+					if valueInt, err := strconv.Atoi(value); err == nil {
+						device.WorkingDevices = valueInt
 					}
 				}
-				break // Found a match, move to next line
 			}
 		}
 	}
