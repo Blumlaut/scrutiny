@@ -251,6 +251,10 @@ func (mc *MetricsCollector) CollectMdadm(deviceWWN string, deviceName string, de
 					if valueInt, err := strconv.Atoi(value); err == nil {
 						device.WorkingDevices = valueInt
 					}
+				case "Device State":
+					device.ArrayStatus = value
+				case "Array State":
+					device.ArrayStatus = value
 				}
 			}
 		} else if strings.Contains(line, " ") && !strings.HasPrefix(line, "Number") {
@@ -295,6 +299,8 @@ func (mc *MetricsCollector) CollectMdadm(deviceWWN string, deviceName string, de
 					if valueInt, err := strconv.Atoi(value); err == nil {
 						device.WorkingDevices = valueInt
 					}
+				case "Device State":
+					device.ArrayStatus = value
 				}
 			}
 		}
