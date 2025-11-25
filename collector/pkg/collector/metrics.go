@@ -174,32 +174,13 @@ func (mc *MetricsCollector) CollectMdadm(deviceWWN string, deviceName string, de
 	}
 	
 	mc.logger.Infof("Collecting mdadm details for RAID array %s\n", deviceName)
-	
-	// Run mdadm --detail to get comprehensive array status
-	// For mdadm arrays, we need to properly construct the device path
-	// The deviceName from detection might be just "0" but we need "/dev/md/0"
-	var fullDeviceName string
-	if strings.HasPrefix(deviceName, "/dev/md/") {
-		fullDeviceName = deviceName
-		mc.logger.Infof("Using full device path directly: %s", fullDeviceName)
-	} else {
-		// Check if deviceName is just a number (like "0") and construct proper path
-		if _, err := strconv.Atoi(deviceName); err == nil {
-			fullDeviceName = fmt.Sprintf("/dev/md/%s", deviceName)
-			mc.logger.Infof("Constructed mdadm device path: %s from numeric device name: %s", fullDeviceName, deviceName)
-		} else {
-			// If it's not a number, use it as-is but with proper prefix
-			fullDeviceName = fmt.Sprintf("/dev/%s", deviceName)
-			mc.logger.Infof("Constructed device path: %s from device name: %s", fullDeviceName, deviceName)
-		}
-	}
-	
+
 	// Log the final device path that will be used
-	mc.logger.Debugf("Final device path for mdadm command: %s", fullDeviceName)
+	mc.logger.Debugf("Final device path for mdadm command: %s", deviceName)
 	
 	// Use --detail which provides comprehensive RAID status information
 	// This gives detailed output including array configuration, status, devices, etc.
-	args := []string{"--detail", fullDeviceName}
+	args := []string{"--detail", deviceName}
 	
 	result, err := mc.shell.Command(mc.logger, "mdadm", args, "", os.Environ())
 	if err != nil {
