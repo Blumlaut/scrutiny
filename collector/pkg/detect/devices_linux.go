@@ -110,9 +110,17 @@ func (d *Detect) Start() ([]models.Device, error) {
 	}
 
 	// Inflate device info for detected devices
-	for ndx, _ := range detectedDevices {
-		d.SmartCtlInfo(&detectedDevices[ndx]) //ignore errors.
-		populateUdevInfo(&detectedDevices[ndx]) //ignore errors.
+	// Skip SmartCtlInfo for mdadm devices as they don't have SMART data
+	for ndx, device := range detectedDevices {
+		if device.DeviceType == "mdadm" || device.IsRaidArray {
+			// For mdadm arrays, we already have the information from DetectMdadmArrays
+			// Skip SmartCtlInfo and just populate udev info
+			populateUdevInfo(&detectedDevices[ndx]) //ignore errors.
+		} else {
+			// For regular devices, run SmartCtlInfo to get SMART data
+			d.SmartCtlInfo(&detectedDevices[ndx]) //ignore errors.
+			populateUdevInfo(&detectedDevices[ndx]) //ignore errors.
+		}
 	}
 
 	return detectedDevices, nil
