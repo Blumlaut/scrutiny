@@ -1,6 +1,6 @@
 <div *ngIf="deviceSummary.device.device_type === 'mdadm' || deviceSummary.device.is_raid_array === true else regularDeviceCard">
   <!-- RAID Array Card UI -->
-  <div class="flex flex-col flex-auto p-6 pr-3 pb-3 bg-card rounded border-l-4 shadow-md overflow-hidden">
+  <div class="flex flex-col flex-auto w-full p-6 pr-3 pb-3 bg-card rounded border-l-4 shadow-md overflow-hidden">
     <div class="absolute bottom-0 right-0 w-24 h-24 -m-6">
       <mat-icon class="icon-size-96 opacity-12 text-green" [svgIcon]="'heroicons_outline:server'"></mat-icon>
     </div>
@@ -57,6 +57,18 @@
       <div class="flex flex-col mx-6 my-3 xs:w-full">
         <div class="font-semibold text-xs text-hint uppercase tracking-wider leading-none">Devices</div>
         <div class="mt-2 font-medium text-3xl leading-none">{{deviceSummary.device.raid_devices}}</div>
+      </div>
+      <div class="flex flex-col mx-6 my-3 xs:w-full">
+        <div class="font-semibold text-xs text-hint uppercase tracking-wider leading-none">Active Devices</div>
+        <div class="mt-2 font-medium text-3xl leading-none">{{deviceSummary.device.active_devices}}</div>
+      </div>
+      <div class="flex flex-col mx-6 my-3 xs:w-full">
+        <div class="font-semibold text-xs text-hint uppercase tracking-wider leading-none">Failed Devices</div>
+        <div class="mt-2 font-medium text-3xl leading-none">{{deviceSummary.device.failed_devices}}</div>
+      </div>
+      <div class="flex flex-col mx-6 my-3 xs:w-full">
+        <div class="font-semibold text-xs text-hint uppercase tracking-wider leading-none">Array Status</div>
+        <div class="mt-2 font-medium text-3xl leading-none">{{deviceSummary.device.array_status}}</div>
       </div>
     </div>
   </div>

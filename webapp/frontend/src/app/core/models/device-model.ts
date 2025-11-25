@@ -33,4 +33,7 @@ export interface DeviceModel {
     active_devices?: number;
     failed_devices?: number;
     array_size?: string;
+    layout?: string;
+    chunk_size?: string;
+    working_devices?: number;
 }
