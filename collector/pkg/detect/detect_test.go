@@ -408,3 +408,36 @@ func TestDetect_SmartCtlInfo(t *testing.T) {
 		assert.Equal(t, someCapacity, someDevice.Capacity)
 	})
 }
+
+func TestDetect_SmartctlScan_Mdadm(t *testing.T) {
+	// setup
+	mockCtrl := gomock.NewController(t)
+	defer mockCtrl.Finish()
+	fakeConfig := mock_config.NewMockInterface(mockCtrl)
+	fakeConfig.EXPECT().GetString("host.id").AnyTimes().Return("")
+	fakeConfig.EXPECT().GetDeviceOverrides().AnyTimes().Return([]models.ScanOverride{})
+	fakeConfig.EXPECT().GetString("commands.metrics_smartctl_bin").AnyTimes().Return("smartctl")
+	fakeConfig.EXPECT().GetString("commands.metrics_scan_args").AnyTimes().Return("--scan --json")
+	fakeConfig.EXPECT().GetString("commands.metrics_mdadm_scan_args").AnyTimes().Return("--scan --export")
+	fakeConfig.EXPECT().IsAllowlistedDevice(gomock.Any()).AnyTimes().Return(true)
+
+	fakeShell := mock_shell.NewMockInterface(mockCtrl)
+	testScanResults, err := os.ReadFile("testdata/smartctl_scan_mdadm.json")
+	fakeShell.EXPECT().Command(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).AnyTimes().Return(string(testScanResults), err)
+
+	d := detect.Detect{
+		Logger: logrus.WithFields(logrus.Fields{}),
+		Shell:  fakeShell,
+		Config: fakeConfig,
+	}
+
+	// test
+	scannedDevices, err := d.SmartctlScan()
+
+	// assert
+	require.NoError(t, err)
+	require.Equal(t, 1, len(scannedDevices))
+	require.Equal(t, []models.Device{
+		{DeviceName: "md0", DeviceType: "mdadm,0"},
+	}, scannedDevices)
+}

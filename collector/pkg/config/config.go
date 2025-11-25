@@ -48,6 +48,10 @@ func (c *configuration) Init() error {
 	c.SetDefault("commands.metrics_info_args", "--info --json")
 	c.SetDefault("commands.metrics_smart_args", "--xall --json")
 	c.SetDefault("commands.metrics_smartctl_wait", 0)
+	
+	// mdadm commands
+	c.SetDefault("commands.metrics_mdadm_detail_args", "--detail --export --json")
+	c.SetDefault("commands.metrics_mdadm_scan_args", "--scan --export --json")
 
 	//configure env variable parsing.
 	c.SetEnvPrefix("COLLECTOR")
@@ -113,6 +117,8 @@ func (c *configuration) ValidateConfig() error {
 		"commands.metrics_scan_args":  c.GetString("commands.metrics_scan_args"),
 		"commands.metrics_info_args":  c.GetString("commands.metrics_info_args"),
 		"commands.metrics_smart_args": c.GetString("commands.metrics_smart_args"),
+		"commands.metrics_mdadm_detail_args": c.GetString("commands.metrics_mdadm_detail_args"),
+		"commands.metrics_mdadm_scan_args": c.GetString("commands.metrics_mdadm_scan_args"),
 	}
 
 	errorStrings := []string{}

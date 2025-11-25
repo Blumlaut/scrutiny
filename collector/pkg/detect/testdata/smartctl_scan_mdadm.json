@@ -1,0 +1,19 @@
+{
+  "json_format_version": [1, 0],
+  "smartctl": {
+    "version": [7, 1],
+    "svn_revision": "5022",
+    "platform_info": "x86_64-linux-5.4.0-45-generic",
+    "build_info": "(local build)",
+    "argv": ["smartctl", "-j", "--scan"],
+    "exit_status": 0
+  },
+  "devices": [
+    {
+      "name": "/dev/md0",
+      "info_name": "/dev/md0",
+      "type": "mdadm,0",
+      "protocol": "SCSI"
+    }
+  ]
+}

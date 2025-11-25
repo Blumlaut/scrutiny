@@ -90,7 +90,15 @@ func (mc *MetricsCollector) Run() error {
 			// execute collection in parallel go-routines
 			//wg.Add(1)
 			//go mc.Collect(&wg, device.WWN, device.DeviceName, device.DeviceType)
-			mc.Collect(device.WWN, device.DeviceName, device.DeviceType)
+			
+			// Check if this is an mdadm device
+			if strings.HasPrefix(device.DeviceType, "mdadm") {
+				// Handle mdadm device differently
+				mc.CollectMdadm(device.WWN, device.DeviceName, device.DeviceType)
+			} else {
+				// Handle regular device with existing logic
+				mc.Collect(device.WWN, device.DeviceName, device.DeviceType)
+			}
 
 			if mc.config.GetInt("commands.metrics_smartctl_wait") > 0 {
 				time.Sleep(time.Duration(mc.config.GetInt("commands.metrics_smartctl_wait")) * time.Second)
@@ -151,6 +159,33 @@ func (mc *MetricsCollector) Collect(deviceWWN string, deviceName string, deviceT
 		//successful run, pass the results directly to webapp backend for parsing and processing.
 		mc.Publish(deviceWWN, resultBytes)
 	}
+}
+
+// CollectMdadm collects metrics for mdadm RAID arrays
+func (mc *MetricsCollector) CollectMdadm(deviceWWN string, deviceName string, deviceType string) {
+	// Only process if mdadm command is available
+	_, err := exec.LookPath("mdadm")
+	if err != nil {
+		mc.logger.Warnf("mdadm command not found, skipping RAID array monitoring for %s", deviceName)
+		return
+	}
+	
+	mc.logger.Infof("Collecting mdadm details for RAID array %s\n", deviceName)
+	
+	// Run mdadm --detail to get array status
+	fullDeviceName := fmt.Sprintf("%s%s", detect.DevicePrefix(), deviceName)
+	args := strings.Split(mc.config.GetString("commands.metrics_mdadm_detail_args"), " ")
+	args = append(args, fullDeviceName)
+	
+	result, err := mc.shell.Command(mc.logger, "mdadm", args, "", os.Environ())
+	if err != nil {
+		mc.logger.Errorf("Error collecting mdadm data for %s: %v", deviceName, err)
+		return
+	}
+	
+	// Parse mdadm output and convert to SMART-like metrics
+	// This would be where you extract array state, device status, etc.
+	mc.Publish(deviceWWN, []byte(result))
 }
 
 func (mc *MetricsCollector) Publish(deviceWWN string, payload []byte) error {

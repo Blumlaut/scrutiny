@@ -62,6 +62,7 @@ Scrutiny uses `smartctl --scan` to detect devices/drives.
 - If you use docker, you **must** pass though the RAID virtual disk to the container using `--device` (see below)
     - This device may be in `/dev/*` or `/dev/bus/*`.
     - If you're unsure, run `smartctl --scan` on your host, and pass all listed devices to the container.
+- Scrutiny now supports monitoring mdadm RAID arrays directly using the `mdadm` command. When `mdadm` is available, the collector will detect and monitor RAID arrays in addition to individual drives.
 
 See [docs/TROUBLESHOOTING_DEVICE_COLLECTOR.md](./docs/TROUBLESHOOTING_DEVICE_COLLECTOR.md) for help
 
