@@ -24,4 +24,13 @@ export interface DeviceModel {
     host_id: string;
 
     device_status: number;
+    
+    // RAID-specific fields
+    is_raid_array?: boolean;
+    raid_level?: string;
+    array_status?: string;
+    raid_devices?: number;
+    active_devices?: number;
+    failed_devices?: number;
+    array_size?: string;
 }
