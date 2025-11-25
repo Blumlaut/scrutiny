@@ -57,7 +57,7 @@ func (d *Detect) DetectMdadmArrays() ([]models.Device, error) {
 					// For regular devices like /dev/sda, extract just the device name part
 					device.DeviceName = strings.TrimPrefix(deviceName, "/dev/")
 				}
-				
+
 				// Extract key-value pairs from the line
 				// Format: ARRAY /dev/md/0 level=raid5 num-devices=4 metadata=1.2 UUID=d42fe227:3d36d562:be3be601:118be575
 				// We need to parse the key=value pairs

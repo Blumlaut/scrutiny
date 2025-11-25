@@ -93,7 +93,7 @@ func (mc *MetricsCollector) Run() error {
 			//go mc.Collect(&wg, device.WWN, device.DeviceName, device.DeviceType)
 			
 			// Check if this is an mdadm device
-			if strings.HasPrefix(device.DeviceType, "mdadm") {
+			if strings.HasPrefix(device.DeviceType, "mdadm") || device.IsRaidArray {
 				// Handle mdadm device differently
 				mc.CollectMdadm(device.WWN, device.DeviceName, device.DeviceType)
 			} else {
