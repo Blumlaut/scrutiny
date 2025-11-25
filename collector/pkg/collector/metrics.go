@@ -181,9 +181,21 @@ func (mc *MetricsCollector) CollectMdadm(deviceWWN string, deviceName string, de
 	var fullDeviceName string
 	if strings.HasPrefix(deviceName, "/dev/md/") {
 		fullDeviceName = deviceName
+		mc.logger.Debugf("Using full device path directly: %s", fullDeviceName)
 	} else {
-		fullDeviceName = fmt.Sprintf("/dev/md/%s", deviceName)
+		// Check if deviceName is just a number (like "0") and construct proper path
+		if _, err := strconv.Atoi(deviceName); err == nil {
+			fullDeviceName = fmt.Sprintf("/dev/md/%s", deviceName)
+			mc.logger.Debugf("Constructed mdadm device path: %s from numeric device name: %s", fullDeviceName, deviceName)
+		} else {
+			// If it's not a number, use it as-is but with proper prefix
+			fullDeviceName = fmt.Sprintf("/dev/%s", deviceName)
+			mc.logger.Debugf("Constructed device path: %s from device name: %s", fullDeviceName, deviceName)
+		}
 	}
+	
+	// Log the final device path that will be used
+	mc.logger.Debugf("Final device path for mdadm command: %s", fullDeviceName)
 	
 	// Use --detail which provides comprehensive RAID status information
 	// This gives detailed output including array configuration, status, devices, etc.

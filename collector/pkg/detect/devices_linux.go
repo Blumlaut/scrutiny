@@ -48,11 +48,13 @@ func (d *Detect) DetectMdadmArrays() ([]models.Device, error) {
 			if len(parts) > 1 {
 				deviceName := strings.TrimSpace(parts[1])
 				if strings.HasPrefix(deviceName, "/dev/md/") {
-					// Extract just the array number/identifier (e.g., "0" from "/dev/md/0")
-					device.DeviceName = strings.TrimPrefix(deviceName, "/dev/md/")
-					device.DeviceName = strings.TrimPrefix(device.DeviceName, "/dev/")
+					// For mdadm arrays, we need to store the full path for proper handling later
+					// The device name should be the full path like "/dev/md/0"
+					device.DeviceName = deviceName
+					// Also ensure DeviceType is properly set
+					device.DeviceType = "mdadm"
 				} else if strings.HasPrefix(deviceName, "/dev/") {
-					// For devices like /dev/sda, extract just the device name
+					// For regular devices like /dev/sda, extract just the device name part
 					device.DeviceName = strings.TrimPrefix(deviceName, "/dev/")
 				}
 				
