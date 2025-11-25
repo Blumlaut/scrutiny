@@ -51,7 +51,7 @@ func (c *configuration) Init() error {
 	
 	// mdadm commands
 	c.SetDefault("commands.metrics_mdadm_detail_args", "--detail")
-	c.SetDefault("commands.metrics_mdadm_scan_args", "--scan --export --json")
+	c.SetDefault("commands.metrics_mdadm_scan_args", "-v --detail --scan")
 
 	//configure env variable parsing.
 	c.SetEnvPrefix("COLLECTOR")

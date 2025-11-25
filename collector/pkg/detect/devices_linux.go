@@ -3,6 +3,7 @@ package detect
 import (
 	"fmt"
 	"os"
+	"strconv"
 	"strings"
 
 	"github.com/analogj/scrutiny/collector/pkg/common/shell"
@@ -17,22 +18,72 @@ func DevicePrefix() string {
 }
 
 func (d *Detect) DetectMdadmArrays() ([]models.Device, error) {
-	// Run mdadm --detail --scan --export to find all arrays
+	// Run mdadm scan to find all arrays
 	args := strings.Split(d.Config.GetString("commands.metrics_mdadm_scan_args"), " ")
-	_, err := d.Shell.Command(d.Logger, "mdadm", args, "", os.Environ())
+	output, err := d.Shell.Command(d.Logger, "mdadm", args, "", os.Environ())
 	if err != nil {
 		d.Logger.Debugf("Failed to scan mdadm arrays: %v", err)
 		return []models.Device{}, nil // Return empty array instead of error
 	}
 	
-	// For now, we'll return a basic device structure based on what smartctl detects
-	// In a more complex implementation, we would parse the mdadm output
-	// For now we'll just check if mdadm command exists and return a placeholder
-	// The actual parsing would be more complex and require proper mdadm output parsing
+	// Parse mdadm output to extract array information
+	// The output format is typically like:
+	// ARRAY /dev/md/0 level=raid5 num-devices=4 metadata=1.2 UUID=d42fe227:3d36d562:be3be601:118be575
+	//   devices=/dev/sda,/dev/sdb,/dev/sdc,/dev/sdd
 	
-	// Since we're using smartctl to detect devices, we can let it detect mdadm devices
-	// by running the scan and parsing the results
-	return []models.Device{}, nil
+	var devices []models.Device
+	
+	lines := strings.Split(strings.TrimSpace(output), "\n")
+	for _, line := range lines {
+		line = strings.TrimSpace(line)
+		if strings.HasPrefix(line, "ARRAY ") {
+			// Parse ARRAY line
+			device := models.Device{
+				DeviceType: "mdadm",
+				IsRaidArray: true,
+			}
+			
+			// Extract device name and key-value pairs from the same line
+			parts := strings.Split(line, " ")
+			if len(parts) > 1 {
+				deviceName := strings.TrimSpace(parts[1])
+				if strings.HasPrefix(deviceName, "/dev/md/") {
+					device.DeviceName = strings.TrimPrefix(deviceName, "/dev/md/")
+					device.DeviceName = strings.TrimPrefix(device.DeviceName, "/dev/")
+				}
+				
+				// Extract key-value pairs from the line
+				// Format: ARRAY /dev/md/0 level=raid5 num-devices=4 metadata=1.2 UUID=d42fe227:3d36d562:be3be601:118be575
+				// We need to parse the key=value pairs
+				for _, part := range parts[1:] {
+					if strings.Contains(part, "=") {
+						kv := strings.SplitN(part, "=", 2)
+						if len(kv) == 2 {
+							key := kv[0]
+							value := kv[1]
+							switch key {
+							case "level":
+								device.RaidLevel = value
+							case "num-devices":
+								if num, err := strconv.Atoi(value); err == nil {
+									device.RaidDevices = num
+								}
+							case "UUID":
+								device.WWN = value
+							}
+						}
+					}
+				}
+			}
+			
+			// If we have a valid device name, add it to the list
+			if len(device.DeviceName) > 0 {
+				devices = append(devices, device)
+			}
+		}
+	}
+	
+	return devices, nil
 }
 
 func (d *Detect) Start() ([]models.Device, error) {
