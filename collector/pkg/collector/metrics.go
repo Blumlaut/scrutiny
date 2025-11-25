@@ -7,6 +7,7 @@ import (
 	"net/url"
 	"os"
 	"os/exec"
+	"strconv"
 	"strings"
 	"time"
 
@@ -167,25 +168,89 @@ func (mc *MetricsCollector) CollectMdadm(deviceWWN string, deviceName string, de
 	_, err := exec.LookPath("mdadm")
 	if err != nil {
 		mc.logger.Warnf("mdadm command not found, skipping RAID array monitoring for %s", deviceName)
+		// Even if we can't collect mdadm data, we should still publish minimal data to avoid missing device entries
+		mc.Publish(deviceWWN, []byte("{}"))
 		return
 	}
 	
 	mc.logger.Infof("Collecting mdadm details for RAID array %s\n", deviceName)
 	
-	// Run mdadm --detail to get array status
+	// Run mdadm --detail to get comprehensive array status
 	fullDeviceName := fmt.Sprintf("%s%s", detect.DevicePrefix(), deviceName)
-	args := strings.Split(mc.config.GetString("commands.metrics_mdadm_detail_args"), " ")
-	args = append(args, fullDeviceName)
+	// Use --detail which provides comprehensive RAID status information
+	// This gives detailed output including array configuration, status, devices, etc.
+	args := []string{"--detail", fullDeviceName}
 	
 	result, err := mc.shell.Command(mc.logger, "mdadm", args, "", os.Environ())
 	if err != nil {
 		mc.logger.Errorf("Error collecting mdadm data for %s: %v", deviceName, err)
+		// Even if we can't collect mdadm data, we should still publish minimal data to avoid missing device entries
+		mc.Publish(deviceWWN, []byte("{}"))
 		return
 	}
 	
-	// Parse mdadm output and convert to SMART-like metrics
-	// This would be where you extract array state, device status, etc.
-	mc.Publish(deviceWWN, []byte(result))
+	// Parse mdadm output to extract RAID information and populate device fields
+	device := models.Device{
+		WWN:          deviceWWN,
+		DeviceName:   deviceName,
+		DeviceType:   deviceType,
+		IsRaidArray:  true,
+	}
+	
+	// Parse basic RAID information from mdadm output using a map for cleaner code
+	// Define the mapping of mdadm output keys to device fields
+	fieldMappings := map[string]*string{
+		"Raid Level":   &device.RaidLevel,
+		"Array Size":   &device.ArraySize,
+		"Layout":       &device.Layout,
+		"Chunk Size":   &device.ChunkSize,
+		"State":        &device.ArrayStatus,
+	}
+	
+	// Define the mapping of mdadm output keys to integer fields
+	intFieldMappings := map[string]*int{
+		"Raid Devices":   &device.RaidDevices,
+		"Active Devices": &device.ActiveDevices,
+		"Failed Devices": &device.FailedDevices,
+		"Working Devices": &device.WorkingDevices,
+	}
+	
+	lines := strings.Split(strings.TrimSpace(result), "\n")
+	for _, line := range lines {
+		line = strings.TrimSpace(line)
+		for key, fieldPtr := range fieldMappings {
+			if strings.HasPrefix(line, key) {
+				if parts := strings.Split(line, ":"); len(parts) > 1 {
+					*fieldPtr = strings.TrimSpace(parts[1])
+				}
+				break // Found a match, move to next line
+			}
+		}
+		
+		for key, fieldPtr := range intFieldMappings {
+			if strings.HasPrefix(line, key) {
+				if parts := strings.Split(line, ":"); len(parts) > 1 {
+					if value, err := strconv.Atoi(strings.TrimSpace(parts[1])); err == nil {
+						*fieldPtr = value
+					}
+				}
+				break // Found a match, move to next line
+			}
+		}
+	}
+	
+	// Create a JSON payload with the parsed RAID data
+	// This ensures the data is properly structured for the frontend
+	payload, err := json.Marshal(device)
+	if err != nil {
+		mc.logger.Errorf("Error marshaling device data for %s: %v", deviceName, err)
+		// Fallback to raw mdadm output if marshaling fails
+		mc.Publish(deviceWWN, []byte(result))
+		return
+	}
+	
+	// Publish the structured data
+	mc.Publish(deviceWWN, payload)
 }
 
 func (mc *MetricsCollector) Publish(deviceWWN string, payload []byte) error {

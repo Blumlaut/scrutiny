@@ -25,6 +25,13 @@ type Device struct {
 	IsRaidArray    bool   `json:"is_raid_array,omitempty"`
 	RaidLevel      string `json:"raid_level,omitempty"`
 	ArrayStatus    string `json:"array_status,omitempty"`
+	RaidDevices    int    `json:"raid_devices,omitempty"`
+	ArraySize      string `json:"array_size,omitempty"`
+	ActiveDevices  int    `json:"active_devices,omitempty"`
+	FailedDevices  int    `json:"failed_devices,omitempty"`
+	WorkingDevices int    `json:"working_devices,omitempty"`
+	Layout         string `json:"layout,omitempty"`
+	ChunkSize      string `json:"chunk_size,omitempty"`
 
 	// User provided metadata
 	Label  string `json:"label"`

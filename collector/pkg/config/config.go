@@ -50,7 +50,7 @@ func (c *configuration) Init() error {
 	c.SetDefault("commands.metrics_smartctl_wait", 0)
 	
 	// mdadm commands
-	c.SetDefault("commands.metrics_mdadm_detail_args", "--detail --export --json")
+	c.SetDefault("commands.metrics_mdadm_detail_args", "--detail")
 	c.SetDefault("commands.metrics_mdadm_scan_args", "--scan --export --json")
 
 	//configure env variable parsing.

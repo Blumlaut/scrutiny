@@ -83,7 +83,7 @@ commands:
   metrics_smart_args: '--xall --json' # used to retrieve smart data for each device.
   metrics_smartctl_wait: 0 # time to wait in seconds between each disk's check
   # mdadm commands
-  metrics_mdadm_detail_args: '--detail --export --json'
+  metrics_mdadm_detail_args: '--detail'
   metrics_mdadm_scan_args: '--scan --export --json'
 
 
