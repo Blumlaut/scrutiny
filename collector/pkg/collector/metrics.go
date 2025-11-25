@@ -219,9 +219,17 @@ func (mc *MetricsCollector) CollectMdadm(deviceWWN string, deviceName string, de
 	lines := strings.Split(strings.TrimSpace(result), "\n")
 	for _, line := range lines {
 		line = strings.TrimSpace(line)
+		// Handle various possible formats for mdadm output
 		for key, fieldPtr := range fieldMappings {
-			if strings.HasPrefix(line, key) {
-				if parts := strings.Split(line, ":"); len(parts) > 1 {
+			// Check for exact key match or variations - handle different formats
+			if strings.HasPrefix(line, key+":") {
+				if parts := strings.SplitN(line, ":", 2); len(parts) > 1 {
+					*fieldPtr = strings.TrimSpace(parts[1])
+				}
+				break // Found a match, move to next line
+			} else if strings.HasPrefix(line, key+" ") {
+				// Handle cases where key is followed by space instead of colon
+				if parts := strings.SplitN(line, " ", 2); len(parts) > 1 {
 					*fieldPtr = strings.TrimSpace(parts[1])
 				}
 				break // Found a match, move to next line
@@ -229,8 +237,17 @@ func (mc *MetricsCollector) CollectMdadm(deviceWWN string, deviceName string, de
 		}
 		
 		for key, fieldPtr := range intFieldMappings {
-			if strings.HasPrefix(line, key) {
-				if parts := strings.Split(line, ":"); len(parts) > 1 {
+			// Check for exact key match or variations - handle different formats
+			if strings.HasPrefix(line, key+":") {
+				if parts := strings.SplitN(line, ":", 2); len(parts) > 1 {
+					if value, err := strconv.Atoi(strings.TrimSpace(parts[1])); err == nil {
+						*fieldPtr = value
+					}
+				}
+				break // Found a match, move to next line
+			} else if strings.HasPrefix(line, key+" ") {
+				// Handle cases where key is followed by space instead of colon
+				if parts := strings.SplitN(line, " ", 2); len(parts) > 1 {
 					if value, err := strconv.Atoi(strings.TrimSpace(parts[1])); err == nil {
 						*fieldPtr = value
 					}
